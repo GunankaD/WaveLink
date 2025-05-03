@@ -1,6 +1,7 @@
 import User from "../models/user.model.js" // used to create user object from our schema
 import bcrypt from "bcryptjs" // used to hash password
 import { generateToken } from "../lib/utils.js"
+import cloudinary from "../lib/cloudinary.js";
 
 // res.status(400) -> bad request
 // res.status(500) -> internal server error
@@ -25,7 +26,7 @@ export const signup = async (req, res) => {
         // CHECK: make sure this email doesnt already have an account
         const user = await User.findOne({email});
         if(user) 
-            return res.status(400).json({message: "Email already exists"});
+            return res.status(400).json({message: "Email already exists. Please login"});
 
         // hash password
         const salt = await bcrypt.genSalt(10)
@@ -107,8 +108,37 @@ export const logout = (req, res) => {
     }
 };
 
-
 export const updateProfile = async (req, res) => {
-    const {profilePic} = res.body;
+    try {
+        const {profilePic} = req.body;
 
-}
+        // req also includes .user because of protectRoute() middleware
+        const userId = req.user._id;
+
+        // CHECK: profilePic
+        if(!profilePic){
+            return res.status(400).json({message:"Profile pic not selected"})
+        }
+
+        // upload profilePic to cloudinary
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+
+        // store the cloudinaryUrl of the image in mongoDB
+        const updatedUser = await User.findByIdAndUpdate(userId, {profilePic:uploadResponse.secure_url}, {new:true});
+
+        res.status(200).json(updatedUser);
+
+    } catch (error) {
+        console.log("Error in update profile: ", error);
+        res.status(500).json({message:"Internal Server Error (updateProfile)"});
+    }
+};
+
+export const checkAuth = (req, res) => {
+    try {
+        res.status(200).json(req.user);
+    } catch (error) {
+        console.log("Error in checkAuth controller", error.message);
+        res.status(500).json({message: "Internal Server Error"});
+    }
+};
