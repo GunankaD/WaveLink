@@ -12,16 +12,16 @@ const app = express();
 
 // .use() is used to register middleware or mount routes
 
-// this should be added before any route handlers. required to parse req.body
+// MIDDLEWARE: this should be added before any route handlers. required to parse req.body
 app.use(express.json());
 
-// allows us to parse the cookies to grab values out of it
+// MIDDLEWARE: allows us to parse the cookies to grab values out of it
 app.use(cookieParser());
 
-// route handler for authentication
+// ROUTE: route handler for authentication
 app.use("/api/auth", authRoutes)
 
-// route handler for messages
+// ROUTE: route handler for messages
 app.use("/api/message", messageRoutes)
 
 const PORT = process.env.PORT
