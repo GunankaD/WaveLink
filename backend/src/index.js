@@ -1,50 +1,42 @@
 import express from "express";
-import dotenv from "dotenv"
-import cookieParser from "cookie-parser"
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import path from "path";
 
-import { connectDB } from "./lib/db.js"
+import { connectDB } from "./lib/db.js";
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
 import { app, server } from "./lib/socket.js";
 
-dotenv.config(); // loads all env variables into process.env
+dotenv.config();
 
 const PORT = process.env.PORT;
 const __dirname = path.resolve();
 
-// .use() is used to register middleware or mount routes
-
-// MIDDLEWARE: this should be added before any route handlers. required to parse req.body
 app.use(express.json());
-
-// MIDDLEWARE: allows us to parse the cookies to grab values out of it
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-// MIDDLWARE: this is used to allow cross-origin requests. required for the frontend to be able to make requests to the backend
-app.use(cors({
-    origin: "localhost:5173", // allow requests from this origin
-    credentials: true, // allow cookies to be sent with requests
-}));
-
-// ROUTE: route handler for authentication
-app.use("/api/auth", authRoutes)
-
-// ROUTE: route handler for messages
-app.use("/api/message", messageRoutes)
+app.use("/api/auth", authRoutes);
+app.use("/api/messages", messageRoutes);
 
 if (process.env.NODE_ENV === "production") {
-    app.use(express.static(path.join(__dirname, "../frontend/dist")));
-  
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
-    });
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  });
 }
 
 server.listen(PORT, () => {
-    console.log("server is running on port: " + PORT);
-    connectDB();
+  console.log("server is running on PORT:" + PORT);
+  connectDB();
 });
