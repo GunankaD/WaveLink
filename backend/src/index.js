@@ -1,16 +1,20 @@
 import express from "express";
 import dotenv from "dotenv"
-import { connectDB } from "./lib/db.js"
 import cookieParser from "cookie-parser"
+import cors from "cors";
 
-import cors from "cors"
+import path from "path";
+
+import { connectDB } from "./lib/db.js"
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import { app, server } from "./lib/socket.js";
 
 dotenv.config(); // loads all env variables into process.env
 
-const app = express();
+const PORT = process.env.PORT;
+const __dirname = path.resolve();
 
 // .use() is used to register middleware or mount routes
 
@@ -32,9 +36,15 @@ app.use("/api/auth", authRoutes)
 // ROUTE: route handler for messages
 app.use("/api/message", messageRoutes)
 
-const PORT = process.env.PORT
+if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+    });
+}
 
-app.listen(PORT, () => {
-    console.log("server is running on port: ",PORT)
-    connectDB()
-})
+server.listen(PORT, () => {
+    console.log("server is running on port: " + PORT);
+    connectDB();
+});

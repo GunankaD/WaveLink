@@ -3,6 +3,8 @@ import Message from "../models/message.model.js";
 
 import cloudinary from "../lib/cloudinary.js";
 
+import { getReceiverSocketId, io } from "../lib/socket.js";
+
 export const getUsersForSidebar = async (req, res) => {
     try {
         const loggedInUserId = req.user._id; // this because of protectRoute
@@ -38,7 +40,7 @@ export const getMessages = async (req, res) => {
     }
 };
 
-export const sendMessages = async (req, res) => {
+export const sendMessage = async (req, res) => {
     try {
         // a message can have either text or image or both
         const { text, image } = req.body;
@@ -62,7 +64,10 @@ export const sendMessages = async (req, res) => {
 
         await newMessage.save();
 
-        // todo: realtime functionality goes here => socket.io
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
 
         res.status(201).json(newMessage);
 
